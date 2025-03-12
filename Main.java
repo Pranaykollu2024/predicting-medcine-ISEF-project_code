@@ -1,77 +1,68 @@
-import java.util.ArrayList;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
+import java.util.stream.Collectors;
 
-public class Case {
-    private String defendant;
-    private String crime;
-    private List<String> evidence;
-    private String juryDecision;
+import weka.classifiers.Classifier;
+import weka.classifiers.trees.RandomForest;
+import weka.core.DenseInstance;
+import weka.core.Instance;
+import weka.core.Instances;
+import weka.core.converters.ConverterUtils.DataSource;
+import weka.filters.Filter;
+import weka.filters.unsupervised.attribute.Remove;
 
-    public Case(String defendant, String crime, List<String> evidence) {
-        this.defendant = defendant;
-        this.crime = crime;
-        this.evidence = evidence;
-        this.juryDecision = null;
+
+
+public class PersonalizedMedicine {
+    public static void main(String[] args) throws Exception {
+        // Load the data
+        String csvFile = "genetic_data.csv";
+        BufferedReader reader = new BufferedReader(new FileReader(csvFile));
+        Instances data = new Instances(reader);
+        reader.close();
+
+        // Set class attribute (assuming it's the last attribute)
+        data.setClassIndex(data.numAttributes() - 1);
+
+        // Split the data into training and testing sets
+        Instances[] split = splitDataset(data, 0.8);
+        Instances trainingData = split[0]; 
+        Instances testingData = split[1];
+
+        // Train the model
+        RandomForest model = new RandomForest();
+        model.buildClassifier(trainingData);
+
+        // Make predictions and evaluate the model
+        evaluateModel(model, testingData);
     }
 
-    public void presentCase() {
-        System.out.println("Defendant: " + this.defendant);
-        System.out.println("Crime: " + this.crime);
-        System.out.println("Evidence: " + String.join(", ", this.evidence));
+    private static Instances[] splitDataset(Instances data, double trainRatio) {
+        int trainSize = (int) Math.round(data.numInstances() * trainRatio);
+        int testSize = data.numInstances() - trainSize;
+
+        Instances train = new Instances(data, 0, trainSize);
+        Instances test = new Instances(data, trainSize, testSize);
+
+        return new Instances[]{train, test};
     }
 
-    public void runTrial() {
-        // Simulating jury deliberation
-        System.out.println("Jury is deliberating...");
-        
-        // Random outcome based on the strength of the evidence
-        double juryChanceOfConviction = calculateJuryChance();
-        Random random = new Random();
-        this.juryDecision = random.nextDouble() < juryChanceOfConviction ? "Guilty" : "Not Guilty";
-        System.out.println("Jury Decision: " + this.juryDecision);
-    }
+    private static void evaluateModel(Classifier model, Instances testingData) throws Exception {
+        int correct = 0;
 
-    private double calculateJuryChance() {
-        // Simulates the chance of conviction based on evidence
-        if (this.evidence.size() > 3) {
-            return 0.75;  // Strong evidence
-        } else if (this.evidence.size() == 3) {
-            return 0.5;   // Moderate evidence
-        } else {
-            return 0.25;  // Weak evidence
+        for (int i = 0; i < testingData.numInstances(); i++) {
+            Instance instance = testingData.instance(i);
+            double predictedClass = model.classifyInstance(instance);
+            if (predictedClass == instance.classValue()) {
+                correct++;
+            }
         }
+
+        double accuracy = (double) correct / testingData.numInstances();
+        System.out.printf("Accuracy: %.2f%n", accuracy);
     }
 }
 
-public class TrialSimulator {
-    public static void simulateTrial() {
-        // Case 1: Strong evidence
-        List<String> evidence1 = new ArrayList<>();
-        evidence1.add("Fingerprint on weapon");
-        evidence1.add("Witness testimony");
-        evidence1.add("DNA match");
-        evidence1.add("Surveillance footage");
-        
-        Case case1 = new Case("John Doe", "Robbery", evidence1);
-        case1.presentCase();
-        case1.runTrial();
-
-        // Case 2: Moderate evidence
-        List<String> evidence2 = new ArrayList<>();
-        evidence2.add("Footage of crime");
-        evidence2.add("DNA does not match");
-        evidence2.add("Witness testimony");
-        evidence2.add("Weapon at scene of crime");
-        
-        Case case2 = new Case("Jane Doe", "Shoplifting", evidence2);
-        case2.presentCase();
-        case2.runTrial();
-        
-        // Add more cases as needed
-    }
-
-    public static void main(String[] args) {
-        simulateTrial();
-    }
-}
