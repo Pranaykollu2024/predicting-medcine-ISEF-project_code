@@ -1,0 +1,66 @@
+
+Explanation of code/pusdeo code 
+
+BEGIN
+
+    // Load the data from a CSV file
+    SET csvFile TO "genetic_data.csv"
+    OPEN the file "genetic_data.csv" for reading
+    READ the data into 'data'
+    CLOSE the file
+
+    // Set the class attribute to the last attribute in the dataset
+    SET classIndex TO the last attribute in 'data'
+    SET data.classIndex TO classIndex
+
+    // Split the data into training and testing sets
+    CALL splitDataset(data, 0.8) TO get training and testing sets
+    SET trainingData TO the first part of the split
+    SET testingData TO the second part of the split
+
+    // Train the model using the RandomForest classifier
+    CREATE a RandomForest model
+    TRAIN the model using 'trainingData'
+
+    // Evaluate the model on the testing data
+    CALL evaluateModel(model, testingData)
+
+END
+
+
+FUNCTION splitDataset(data, trainRatio):
+    // Calculate sizes of the training and testing datasets
+    SET trainSize TO the rounded value of (data.numInstances * trainRatio)
+    SET testSize TO (data.numInstances - trainSize)
+
+    // Split the data into training and testing sets
+    SET train TO the first 'trainSize' instances of data
+    SET test TO the next 'testSize' instances of data
+
+    RETURN an array containing [train, test]
+
+END
+
+
+FUNCTION evaluateModel(model, testingData):
+    SET correct TO 0
+
+    // Loop through each instance in the testing data
+    FOR each instance i IN testingData:
+        // Get the instance to classify
+        SET instance TO the i-th instance of testingData
+        // Classify the instance
+        SET predictedClass TO model.classifyInstance(instance)
+        
+        // Check if the prediction matches the true class
+        IF predictedClass IS equal to instance.classValue:
+            INCREMENT correct by 1
+
+    // Calculate accuracy
+    SET accuracy TO (correct / total number of instances in testingData)
+
+    // Print the accuracy of the model
+    PRINT "Accuracy: " + accuracy
+
+END
+
